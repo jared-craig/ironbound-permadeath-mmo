@@ -1,6 +1,6 @@
-# Ignore home directory dotfiles and runtime data
 .*
 !.gitignore
+!.dockerignore
 node_modules/
 data/
 *.sqlite

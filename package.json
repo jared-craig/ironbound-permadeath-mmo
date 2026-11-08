@@ -8,5 +8,8 @@
     "start": "node --no-warnings src/index.js",
     "test": "node --no-warnings --test tests/unit/*.test.js tests/api/*.test.js",
     "test:e2e": "node --no-warnings tests/e2e/run_e2e.js"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }

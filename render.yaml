@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ironbound-permadeath-mmo
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DB_PATH
+        value: /app/data/ironbound.sqlite
