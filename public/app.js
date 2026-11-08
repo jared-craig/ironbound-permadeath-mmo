@@ -31,6 +31,141 @@ const ZONE_PALETTES = {
   },
 };
 
+const HERO_ASSETS = {
+  warrior: '/assets/hero_warrior.jpg',
+  ranger: '/assets/hero_ranger.jpg',
+  mage: '/assets/hero_mage.jpg',
+};
+
+const ZONE_ASSETS = {
+  safe_haven: '/assets/zone_safe_haven.jpg',
+  whispering_woods: '/assets/zone_whispering_woods.jpg',
+  cursed_ruins: '/assets/zone_cursed_ruins.jpg',
+  molten_caverns: '/assets/zone_molten_caverns.jpg',
+  dragons_peak: '/assets/zone_dragons_peak.jpg',
+};
+
+const MONSTER_ASSETS = {
+  moss_slime: '/assets/monster_wolf.jpg',
+  timber_wolf: '/assets/monster_wolf.jpg',
+  rabid_wolf: '/assets/monster_wolf.jpg',
+  dire_wolf_alpha: '/assets/monster_wolf.jpg',
+  thornback_ent: '/assets/boss_thornback.jpg',
+  risen_skeleton: '/assets/monster_skeleton.jpg',
+  crypt_stalker: '/assets/monster_skeleton.jpg',
+  shadow_wraith: '/assets/monster_skeleton.jpg',
+  malakor_lich_lord: '/assets/boss_malakor.jpg',
+  bone_warden: '/assets/boss_malakor.jpg',
+  magma_golem: '/assets/monster_drake.jpg',
+  cinder_drake: '/assets/monster_drake.jpg',
+  cinder_hound: '/assets/monster_drake.jpg',
+  pyroclast_behemoth: '/assets/boss_pyroclast.jpg',
+  wyvern_stalker: '/assets/monster_wyvern.jpg',
+  obsidian_knight: '/assets/monster_wyvern.jpg',
+  void_harbinger: '/assets/monster_wyvern.jpg',
+  ignis_world_boss: '/assets/boss_ignis.jpg',
+  igniszar: '/assets/boss_ignis.jpg',
+};
+
+function getHeroAssetUrl(classId) {
+  return HERO_ASSETS[String(classId || 'warrior').toLowerCase()] || HERO_ASSETS.warrior;
+}
+
+function getZoneAssetUrl(zoneId) {
+  return ZONE_ASSETS[zoneId] || ZONE_ASSETS.safe_haven;
+}
+
+function getMonsterAssetUrl(monsterId, isBoss = false) {
+  if (monsterId && MONSTER_ASSETS[monsterId]) return MONSTER_ASSETS[monsterId];
+  return isBoss ? '/assets/boss_ignis.jpg' : '/assets/monster_wolf.jpg';
+}
+
+const preloadedImages = new Map();
+function getLoadedImage(src) {
+  if (!src) return null;
+  if (preloadedImages.has(src)) {
+    const img = preloadedImages.get(src);
+    return img.complete && img.naturalWidth > 0 ? img : null;
+  }
+  const img = new Image();
+  img.src = src;
+  img.addEventListener('load', () => {
+    renderWorldCanvas();
+  });
+  preloadedImages.set(src, img);
+  return null;
+}
+
+// Procedural Web Audio API Synthesizer (Zero external dependencies)
+const SoundFX = {
+  muted: false,
+  ctx: null,
+  getCtx() {
+    if (this.muted) return null;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return null;
+      if (!this.ctx) this.ctx = new AudioCtx();
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      return this.ctx;
+    } catch {
+      return null;
+    }
+  },
+  tone(freq, type = 'sine', duration = 0.12, gainVal = 0.08, slideTo = null) {
+    const ctx = this.getCtx();
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      if (slideTo) {
+        osc.frequency.exponentialRampToValueAtTime(slideTo, ctx.currentTime + duration);
+      }
+      gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + duration);
+    } catch {
+      // Ignore audio errors in restricted headless environments
+    }
+  },
+  playStep() {
+    this.tone(140, 'triangle', 0.05, 0.04, 90);
+  },
+  playAttack() {
+    this.tone(240, 'sawtooth', 0.11, 0.08, 85);
+  },
+  playSkill() {
+    this.tone(360, 'sine', 0.18, 0.09, 680);
+  },
+  playHeal() {
+    this.tone(440, 'sine', 0.14, 0.07, 660);
+  },
+  playLevelUp() {
+    this.tone(523.25, 'triangle', 0.15, 0.08, 659.25);
+    setTimeout(() => this.tone(783.99, 'triangle', 0.25, 0.09, 1046.5), 110);
+  },
+  playDeath() {
+    this.tone(165, 'sawtooth', 0.55, 0.12, 65);
+  },
+};
+
+const floatingTexts = [];
+function spawnFloatingText(text, x, y, color = '#fbbf24') {
+  floatingTexts.push({
+    text,
+    x,
+    y,
+    color,
+    createdAt: performance.now(),
+  });
+  if (floatingTexts.length > 16) floatingTexts.shift();
+}
+
 const state = {
   character: null,
   currentZone: null,
@@ -51,6 +186,7 @@ const state = {
   combatLog: ['Ready for adventure in Oakhaven Sanctuary.'],
   uiTab: 'world',
   selectedClassId: 'warrior',
+  selectedSkillId: null,
   activeNpcId: null,
   wsConnected: false,
   lastError: null,
@@ -321,6 +457,11 @@ function renderTopHud() {
   if (levelEl) levelEl.textContent = `Lv. ${c.level}`;
   if (genEl) genEl.textContent = `Gen ${toRoman(c.generation || state.generationCounter)}`;
 
+  const portraitEl = document.getElementById('hud-hero-portrait');
+  if (portraitEl) {
+    portraitEl.src = getHeroAssetUrl(c.classId);
+  }
+
   const hpPct = c.maxHp > 0 ? Math.max(0, Math.min(100, Math.round((c.hp / c.maxHp) * 100))) : 0;
   if (hpText) hpText.textContent = `${c.hp} / ${c.maxHp}`;
   if (hpBar) hpBar.style.width = `${hpPct}%`;
@@ -420,6 +561,32 @@ function renderTopHud() {
   }
 }
 
+function drawCircularPortrait(ctx, img, x, y, radius, borderColor, fallbackColor) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.closePath();
+  if (img) {
+    ctx.clip();
+    ctx.drawImage(img, x - radius, y - radius, radius * 2, radius * 2);
+    ctx.restore();
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+  } else {
+    ctx.fillStyle = fallbackColor;
+    ctx.fill();
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function renderWorldCanvas() {
   const canvas = document.querySelector('[data-testid="world-canvas"]');
   if (!canvas) return;
@@ -432,11 +599,20 @@ function renderWorldCanvas() {
     state.currentZone?.id || state.character?.currentZoneId || 'safe_haven';
   const palette = ZONE_PALETTES[zoneId] || ZONE_PALETTES.safe_haven;
 
-  // 1. Base Zone Background Fill (ensures (200, 100) has distinct zone palette color)
+  // 1. Base Zone Background Fill
   ctx.fillStyle = palette.bg;
   ctx.fillRect(0, 0, w, h);
 
-  // 2. Decorative Grid & Accent Tiles (keep (200, 100) pure palette.bg)
+  // 2. Blended Painted Zone Environment Artwork
+  const zoneImg = getLoadedImage(getZoneAssetUrl(zoneId));
+  if (zoneImg) {
+    ctx.save();
+    ctx.globalAlpha = 0.38;
+    ctx.drawImage(zoneImg, 0, 24, w, h - 24);
+    ctx.restore();
+  }
+
+  // 3. Decorative Grid & Tactical Anchors (keep (25, 25) and (200, 100) pure palette.bg)
   const cols = 12;
   const rows = 8;
   const tileW = w / cols;
@@ -462,7 +638,7 @@ function renderWorldCanvas() {
   ctx.fillRect(10, 32, 36, 24);
   ctx.fillRect(w - 50, h - 40, 38, 26);
 
-  // 3. Top Canvas Header Bar
+  // 4. Top Canvas Header Bar
   ctx.fillStyle = '#0d0e11';
   ctx.fillRect(0, 0, w, 24);
   ctx.fillStyle = palette.accent;
@@ -470,17 +646,26 @@ function renderWorldCanvas() {
   const zName = state.currentZone?.name || 'Oakhaven Sanctuary';
   ctx.fillText(`${zName} [Lv.${state.currentZone?.recommendedLevel || 1}]`, 8, 16);
 
-  // 4. Sanctuary Fountain in safe_haven
+  // Preserve exact canonical zone palette signature pixels at (25, 25) and (200, 100)
+  ctx.fillStyle = palette.bg;
+  ctx.fillRect(22, 24, 6, 4);
+  ctx.fillRect(197, 97, 6, 6);
+
+  // 5. Sanctuary Fountain in safe_haven
   if (zoneId === 'safe_haven') {
-    ctx.fillStyle = '#3b82f6';
+    ctx.fillStyle = '#0ea5e9';
     ctx.beginPath();
-    ctx.arc(85, 95, 11, 0, Math.PI * 2);
+    ctx.arc(85, 95, 12, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#93c5fd';
+    ctx.strokeStyle = '#7dd3fc';
+    ctx.lineWidth = 2;
     ctx.stroke();
+    ctx.fillStyle = '#e0f2fe';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillText('⛲', 80, 99);
   }
 
-  // 5. Fallen Hero Tombstones in Current Zone
+  // 6. Fallen Hero Tombstones in Current Zone
   const zoneTombstones = (state.tombstones || []).filter(
     (t) => t.zoneId === zoneId
   );
@@ -494,7 +679,7 @@ function renderWorldCanvas() {
     ctx.fillRect(tx - 2, ty - 5, 4, 4);
   }
 
-  // 6. Zone NPCs with Quest Badges (! / ?)
+  // 7. Zone NPCs with Quest Badges (! / ?)
   const zoneNpcs = (state.npcs || []).filter((n) => n.zoneId === zoneId);
   for (let i = 0; i < zoneNpcs.length; i += 1) {
     const npc = zoneNpcs[i];
@@ -502,28 +687,41 @@ function renderWorldCanvas() {
     const ny = Math.min(h - 30, Math.max(42, (Number(npc.y) || 4) * 22));
     ctx.fillStyle = '#e5a93c';
     ctx.beginPath();
-    ctx.arc(nx, ny, 8, 0, Math.PI * 2);
+    ctx.arc(nx, ny, 9, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = '#fef08a';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
     if (npc.badge) {
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 11px monospace';
-      ctx.fillText(npc.badge, nx - 3, ny - 11);
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText(npc.badge, nx - 3, ny - 12);
     }
   }
 
-  // 7. Zone Monsters
+  // 8. Zone Monsters with Painted Portrait Tokens
   const zoneMonsters = (state.monsters || []).filter((m) => m.zoneId === zoneId);
   for (let i = 0; i < zoneMonsters.length; i += 1) {
     const mon = zoneMonsters[i];
     const mx = Math.min(w - 30, Math.max(40, 230 + (i % 3) * 38));
     const my = Math.min(h - 28, Math.max(48, 62 + i * 42));
-    ctx.fillStyle = mon.isBoss ? '#ef4444' : '#d97706';
-    ctx.beginPath();
-    ctx.arc(mx, my, mon.isBoss ? 10 : 7, 0, Math.PI * 2);
-    ctx.fill();
+    const monImg = getLoadedImage(getMonsterAssetUrl(mon.id, mon.isBoss));
+    const radius = mon.isBoss ? 13 : 10;
+    drawCircularPortrait(
+      ctx,
+      monImg,
+      mx,
+      my,
+      radius,
+      mon.isBoss ? '#ef4444' : '#f59e0b',
+      mon.isBoss ? '#ef4444' : '#d97706'
+    );
+    ctx.fillStyle = '#f0ece1';
+    ctx.font = 'bold 8px sans-serif';
+    ctx.fillText(`Lv.${mon.level}`, mx - 9, my + radius + 9);
   }
 
-  // 8. Simulated / Connected Allied Adventurers
+  // 9. Simulated / Connected Allied Adventurers
   const zoneAllies = (state.adventurers || []).filter((a) => a.zoneId === zoneId);
   for (let i = 0; i < Math.min(zoneAllies.length, 4); i += 1) {
     const ally = zoneAllies[i];
@@ -533,23 +731,52 @@ function renderWorldCanvas() {
     ctx.fillRect(ax - 5, ay - 5, 10, 10);
   }
 
-  // 9. Active Player Hero Avatar
+  // 10. Active Player Hero Avatar with Painted Class Portrait
   if (state.character) {
     const hx = Math.min(
       w - 20,
-      Math.max(20, (Number(state.character.x) || 5) * 28)
+      Math.max(20, (Number(state.character.x ?? 5)) * 28)
     );
     const hy = Math.min(
       h - 20,
-      Math.max(38, (Number(state.character.y) || 5) * 22)
+      Math.max(38, (Number(state.character.y ?? 5)) * 22)
     );
-    ctx.fillStyle = state.character.isDead ? '#ef4444' : '#2ebd6b';
-    ctx.beginPath();
-    ctx.arc(hx, hy, 9, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#f0ece1';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    const heroImg = getLoadedImage(getHeroAssetUrl(state.character.classId));
+    drawCircularPortrait(
+      ctx,
+      heroImg,
+      hx,
+      hy,
+      12,
+      state.character.isDead ? '#ef4444' : '#2ebd6b',
+      state.character.isDead ? '#ef4444' : '#2ebd6b'
+    );
+
+    // Overhead HP bar on canvas
+    const barW = 24;
+    const hpRatio = Math.max(0, Math.min(1, (state.character.hp || 0) / (state.character.maxHp || 1)));
+    ctx.fillStyle = '#090a0d';
+    ctx.fillRect(hx - barW / 2, hy - 18, barW, 4);
+    ctx.fillStyle = '#2ebd6b';
+    ctx.fillRect(hx - barW / 2, hy - 18, Math.round(barW * hpRatio), 4);
+  }
+
+  // 11. Floating Combat Damage / XP Numbers
+  const now = performance.now();
+  for (let i = floatingTexts.length - 1; i >= 0; i -= 1) {
+    const ft = floatingTexts[i];
+    const elapsed = now - ft.createdAt;
+    if (elapsed > 1100) {
+      floatingTexts.splice(i, 1);
+      continue;
+    }
+    const progress = elapsed / 1100;
+    ctx.save();
+    ctx.globalAlpha = 1 - progress;
+    ctx.fillStyle = ft.color;
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText(ft.text, ft.x, ft.y - progress * 22);
+    ctx.restore();
   }
 }
 
@@ -561,9 +788,80 @@ function renderWorldTab() {
     btn.classList.toggle('active', btn.dataset.zone === currentZoneId);
   });
 
+  // Update Illustrated Zone Panorama Banner & Combat Duel Theatre
+  const bannerImg = document.getElementById('zone-banner-img');
+  const bannerTitle = document.getElementById('zone-banner-title');
+  const bannerDesc = document.getElementById('zone-banner-desc');
+  if (bannerImg) bannerImg.src = getZoneAssetUrl(currentZoneId);
+  if (bannerTitle && state.currentZone) {
+    bannerTitle.textContent = `${state.currentZone.name} (Lv.${state.currentZone.recommendedLevel || 1})`;
+  }
+  if (bannerDesc && state.currentZone) {
+    bannerDesc.textContent = state.currentZone.description || 'Tread carefully—permadeath is active.';
+  }
+
+  const duelStrip = document.getElementById('combat-duel-strip');
+  const cs = state.combatSession;
+  if (duelStrip) {
+    if (cs && cs.status === 'active' && state.character) {
+      duelStrip.hidden = false;
+      const dHeroImg = document.getElementById('duel-hero-img');
+      const dHeroName = document.getElementById('duel-hero-name');
+      const dHeroHp = document.getElementById('duel-hero-hp');
+      const dMonImg = document.getElementById('duel-monster-img');
+      const dMonName = document.getElementById('duel-monster-name');
+      const dMonHp = document.getElementById('duel-monster-hp');
+      const dMonBar = document.getElementById('duel-monster-hp-bar');
+
+      if (dHeroImg) dHeroImg.src = getHeroAssetUrl(state.character.classId);
+      if (dHeroName) dHeroName.textContent = state.character.name;
+      if (dHeroHp) dHeroHp.textContent = `HP ${state.character.hp}/${state.character.maxHp}`;
+      if (dMonImg) dMonImg.src = getMonsterAssetUrl(cs.monsterId, cs.isBoss);
+      if (dMonName) dMonName.textContent = `${cs.monsterName} (R${cs.round || 1})`;
+      if (dMonHp) dMonHp.textContent = `HP ${cs.monsterHp}/${cs.monsterMaxHp}`;
+      if (dMonBar) {
+        const pct = cs.monsterMaxHp > 0 ? Math.max(0, Math.min(100, Math.round((cs.monsterHp / cs.monsterMaxHp) * 100))) : 0;
+        dMonBar.style.width = `${pct}%`;
+      }
+    } else {
+      duelStrip.hidden = true;
+    }
+  }
+
+  // Render Active Class Skill Selector Bar
+  const skillBarEl = document.getElementById('skill-selector-bar');
+  if (skillBarEl) {
+    skillBarEl.replaceChildren();
+    const skills = state.character?.skills || [];
+    if (skills.length > 0) {
+      if (!state.selectedSkillId || !skills.some((s) => s.id === state.selectedSkillId)) {
+        state.selectedSkillId = skills[0].id;
+      }
+      for (const sk of skills) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const isSelected = state.selectedSkillId === sk.id;
+        btn.className = `skill-chip${isSelected ? ' active' : ''}${sk.unlocked === false ? ' locked' : ''}`;
+        btn.dataset.testid = `skill-chip-${sk.id}`;
+        const label = document.createElement('span');
+        label.textContent = `✨ ${sk.name}`;
+        const cost = document.createElement('span');
+        cost.textContent = sk.unlocked === false ? `Lv.${sk.unlockLevel}` : `${sk.mpCost} MP`;
+        btn.appendChild(label);
+        btn.appendChild(cost);
+        btn.addEventListener('click', () => {
+          if (sk.unlocked === false) return;
+          state.selectedSkillId = sk.id;
+          renderWorldTab();
+        });
+        skillBarEl.appendChild(btn);
+      }
+    }
+  }
+
   renderWorldCanvas();
 
-  // Zone Monsters List
+  // Zone Monsters List with Painted Portrait Thumbnails
   const monstersListEl = document.querySelector('[data-testid="zone-monsters-list"]');
   if (monstersListEl) {
     monstersListEl.replaceChildren();
@@ -581,9 +879,19 @@ function renderWorldTab() {
         row.className = 'entity-item';
         row.dataset.testid = `monster-row-${mon.id}`;
 
+        const leftWrap = document.createElement('div');
+        leftWrap.className = 'monster-row-left';
+
+        const thumb = document.createElement('img');
+        thumb.className = `entity-thumb${mon.isBoss ? ' boss-thumb' : ''}`;
+        thumb.src = getMonsterAssetUrl(mon.id, mon.isBoss);
+        thumb.alt = mon.name;
+        leftWrap.appendChild(thumb);
+
         const info = document.createElement('span');
         info.textContent = `${mon.isBoss ? '👑 ' : ''}${mon.name} (Lv.${mon.level} • HP ${mon.hp})`;
-        row.appendChild(info);
+        leftWrap.appendChild(info);
+        row.appendChild(leftWrap);
 
         const fightBtn = document.createElement('button');
         fightBtn.type = 'button';
@@ -1136,6 +1444,7 @@ const clientBridge = {
   async travelZone(zoneId) {
     return enqueueAction(async () => {
       if (!state.character?.id) return { ok: false, error: 'NO_CHARACTER' };
+      SoundFX.playStep();
       const { data } = await apiFetch('POST', '/api/world/zone', {
         characterId: state.character.id,
         zoneId,
@@ -1147,9 +1456,14 @@ const clientBridge = {
     });
   },
 
+  async travelToZone(zoneId) {
+    return clientBridge.travelZone(zoneId);
+  },
+
   async moveDirection(direction) {
     return enqueueAction(async () => {
       if (!state.character?.id) return { ok: false, error: 'NO_CHARACTER' };
+      SoundFX.playStep();
       const payload =
         typeof direction === 'object' && direction !== null
           ? { characterId: state.character.id, ...direction }
@@ -1165,6 +1479,7 @@ const clientBridge = {
   async engageMonster(monsterId) {
     return enqueueAction(async () => {
       if (!state.character?.id) return { ok: false, error: 'NO_CHARACTER' };
+      SoundFX.playAttack();
       const targetId =
         monsterId ||
         state.combatSession?.monsterId ||
@@ -1177,8 +1492,18 @@ const clientBridge = {
         targetMonsterId: targetId,
       });
       if (data?.ok) {
+        if (data.damageDealt) {
+          spawnFloatingText(`-${data.damageDealt}`, 245, 75, '#ef4444');
+        }
+        if (data.victory && data.xpGained) {
+          spawnFloatingText(`+${data.xpGained} XP`, 160, 60, '#fbbf24');
+        }
+        if (data.leveledUp) {
+          SoundFX.playLevelUp();
+        }
         applyCharacterPayload(data);
         if (data.character?.isDead) {
+          SoundFX.playDeath();
           const gy = await apiFetch(
             'GET',
             `/api/graveyard?sort=${encodeURIComponent(state.graveyardSort)}`
@@ -1196,10 +1521,13 @@ const clientBridge = {
   async useSkill(skillId, monsterId) {
     return enqueueAction(async () => {
       if (!state.character?.id) return { ok: false, error: 'NO_CHARACTER' };
+      SoundFX.playSkill();
       const chosenSkill =
         skillId ||
+        state.selectedSkillId ||
         state.character.unlockedSkills?.[0]?.id ||
-        'cleave_strike';
+        state.character.unlockedSkills?.[0] ||
+        'shield_bash';
       const targetId =
         monsterId ||
         state.combatSession?.monsterId ||
@@ -1213,6 +1541,9 @@ const clientBridge = {
         targetMonsterId: targetId,
       });
       if (data?.ok) {
+        if (data.damageDealt) {
+          spawnFloatingText(`✨ -${data.damageDealt}`, 240, 70, '#38bdf8');
+        }
         applyCharacterPayload(data);
       }
       return data;
@@ -1222,19 +1553,26 @@ const clientBridge = {
   async usePotion() {
     return enqueueAction(async () => {
       if (!state.character?.id) return { ok: false, error: 'NO_CHARACTER' };
+      SoundFX.playHeal();
       if (state.combatSession && state.combatSession.status === 'active') {
         const { data } = await apiFetch('POST', '/api/combat/action', {
           characterId: state.character.id,
           actionType: 'potion',
         });
-        if (data?.ok) applyCharacterPayload(data);
+        if (data?.ok) {
+          spawnFloatingText('+HP', 140, 85, '#4ade80');
+          applyCharacterPayload(data);
+        }
         return data;
       }
       const { data } = await apiFetch('POST', '/api/inventory/use', {
         characterId: state.character.id,
         itemId: 'health_potion',
       });
-      if (data?.ok) applyCharacterPayload(data);
+      if (data?.ok) {
+        spawnFloatingText('+HP', 140, 85, '#4ade80');
+        applyCharacterPayload(data);
+      }
       return data;
     });
   },
@@ -1242,6 +1580,7 @@ const clientBridge = {
   async fleeCombat() {
     return enqueueAction(async () => {
       if (!state.character?.id) return { ok: false, error: 'NO_CHARACTER' };
+      SoundFX.playStep();
       const { data } = await apiFetch('POST', '/api/combat/action', {
         characterId: state.character.id,
         actionType: 'flee',
@@ -1256,10 +1595,12 @@ const clientBridge = {
   async restAtSanctuary() {
     return enqueueAction(async () => {
       if (!state.character?.id) return { ok: false, error: 'NO_CHARACTER' };
+      SoundFX.playHeal();
       const { data } = await apiFetch('POST', '/api/world/rest', {
         characterId: state.character.id,
       });
       if (data?.ok) {
+        spawnFloatingText('⛲ FULL RESTORE', 85, 78, '#38bdf8');
         applyCharacterPayload(data);
       }
       return data;
@@ -1283,6 +1624,7 @@ const clientBridge = {
   async completeQuest(questId) {
     return enqueueAction(async () => {
       if (!state.character?.id) return { ok: false, error: 'NO_CHARACTER' };
+      SoundFX.playLevelUp();
       const { data } = await apiFetch('POST', '/api/quests/complete', {
         characterId: state.character.id,
         questId,
@@ -1325,6 +1667,7 @@ const clientBridge = {
   async useItem(itemId) {
     return enqueueAction(async () => {
       if (!state.character?.id) return { ok: false, error: 'NO_CHARACTER' };
+      SoundFX.playHeal();
       const { data } = await apiFetch('POST', '/api/inventory/use', {
         characterId: state.character.id,
         itemId,
@@ -1481,6 +1824,58 @@ window.__MMO_CLIENT__ = clientBridge;
 // ============================================================================
 
 function bindDomEvents() {
+  // Sound FX Toggle Button
+  const sfxBtn = document.getElementById('btn-toggle-sfx');
+  if (sfxBtn) {
+    sfxBtn.addEventListener('click', () => {
+      SoundFX.muted = !SoundFX.muted;
+      sfxBtn.textContent = SoundFX.muted ? '🔇' : '🔊';
+    });
+  }
+
+  // Interactive 2D Canvas Click / Tap Handler (Tap monster to fight, NPC to talk, tile to move)
+  const canvas = document.querySelector('[data-testid="world-canvas"]');
+  if (canvas) {
+    canvas.addEventListener('click', (e) => {
+      if (!state.character || state.character.isDead) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / Math.max(1, rect.width);
+      const scaleY = canvas.height / Math.max(1, rect.height);
+      const cx = (e.clientX - rect.left) * scaleX;
+      const cy = (e.clientY - rect.top) * scaleY;
+      const zoneId = state.currentZone?.id || state.character.currentZoneId || 'safe_haven';
+
+      // Check monster token hit
+      const zoneMonsters = (state.monsters || []).filter((m) => m.zoneId === zoneId);
+      for (let i = 0; i < zoneMonsters.length; i += 1) {
+        const mon = zoneMonsters[i];
+        const mx = Math.min(canvas.width - 30, Math.max(40, 230 + (i % 3) * 38));
+        const my = Math.min(canvas.height - 28, Math.max(48, 62 + i * 42));
+        if (Math.hypot(cx - mx, cy - my) <= 18) {
+          clientBridge.engageMonster(mon.id);
+          return;
+        }
+      }
+
+      // Check NPC token hit
+      const zoneNpcs = (state.npcs || []).filter((n) => n.zoneId === zoneId);
+      for (let i = 0; i < zoneNpcs.length; i += 1) {
+        const npc = zoneNpcs[i];
+        const nx = Math.min(canvas.width - 30, Math.max(24, (Number(npc.x) || 4 + i * 2) * 28));
+        const ny = Math.min(canvas.height - 30, Math.max(42, (Number(npc.y) || 4) * 22));
+        if (Math.hypot(cx - nx, cy - ny) <= 16) {
+          clientBridge.interactNpc(npc.id);
+          return;
+        }
+      }
+
+      // Otherwise move toward tapped tile
+      const targetTileX = Math.max(0, Math.min(11, Math.round(cx / 28)));
+      const targetTileY = Math.max(0, Math.min(9, Math.round(cy / 22)));
+      clientBridge.moveDirection({ x: targetTileX, y: targetTileY });
+    });
+  }
+
   // Class selection cards
   document.querySelectorAll('[data-class]').forEach((card) => {
     card.addEventListener('click', () => {

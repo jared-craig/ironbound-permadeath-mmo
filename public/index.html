@@ -10,17 +10,33 @@
 <body>
   <div id="app-shell" class="app-shell" data-testid="app-shell">
     <!-- Top Hardcore HUD -->
-    <header class="top-hud" data-testid="top-hud">
+    <header class="top-hud" id="hud-top-bar" data-testid="top-hud">
       <div class="hud-brand-row">
         <div class="brand-group">
           <span class="permadeath-badge" data-testid="permadeath-badge">☠️ HARDCORE</span>
           <h1 class="app-title">Ironbound: Permadeath Chronicles</h1>
         </div>
         <div class="hud-hero-meta">
+          <img
+            id="hud-hero-portrait"
+            class="hud-hero-avatar"
+            src="/assets/hero_warrior.jpg"
+            alt="Hero Portrait"
+          />
           <span class="hud-hero-name" data-testid="hud-hero-name">Unbound Soul</span>
           <span class="hud-hero-class" data-testid="hud-hero-class">Warrior</span>
           <span class="hud-hero-level" data-testid="hud-hero-level">Lv. 1</span>
-          <span class="hud-generation" data-testid="hud-generation">Gen I</span>
+          <span class="hud-generation" id="hud-hero-gen" data-testid="hud-generation">Gen I</span>
+          <button
+            type="button"
+            id="btn-toggle-sfx"
+            class="sfx-toggle-btn"
+            data-testid="btn-toggle-sfx"
+            title="Toggle Sound Effects"
+            aria-label="Toggle Sound Effects"
+          >
+            🔊
+          </button>
         </div>
       </div>
 
@@ -113,10 +129,49 @@
           </button>
         </div>
 
+        <!-- Illustrated Zone Panorama & Active Combat Duel Theatre -->
+        <div class="zone-showcase-banner" id="zone-showcase-banner" data-testid="zone-showcase-banner">
+          <img
+            id="zone-banner-img"
+            class="zone-banner-img"
+            src="/assets/zone_safe_haven.jpg"
+            alt="Zone Environment"
+          />
+          <div class="zone-banner-overlay">
+            <div class="zone-banner-meta">
+              <span class="zone-banner-title" id="zone-banner-title">Sunhaven Sanctuary</span>
+              <span class="zone-banner-desc" id="zone-banner-desc">Ancient fortified citadel where heroes rest and prepare.</span>
+            </div>
+            <div class="combat-duel-strip" id="combat-duel-strip" hidden>
+              <div class="duel-fighter">
+                <img id="duel-hero-img" class="duel-avatar" src="/assets/hero_warrior.jpg" alt="Hero" />
+                <div class="duel-meta">
+                  <strong id="duel-hero-name">Hero</strong>
+                  <span id="duel-hero-hp">HP 150/150</span>
+                </div>
+              </div>
+              <span class="duel-vs">⚔️ VS</span>
+              <div class="duel-fighter duel-enemy">
+                <img id="duel-monster-img" class="duel-avatar boss-glow" src="/assets/monster_wolf.jpg" alt="Enemy" />
+                <div class="duel-meta">
+                  <strong id="duel-monster-name">Enemy</strong>
+                  <div class="duel-hp-track">
+                    <div id="duel-monster-hp-bar" class="duel-hp-fill" style="width: 100%"></div>
+                  </div>
+                  <span id="duel-monster-hp">HP 100/100</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 2D Tactical World Canvas -->
         <div class="canvas-container">
           <canvas id="world-canvas" data-testid="world-canvas" width="360" height="220"></canvas>
         </div>
+
+        <!-- Active Class Skill Bar -->
+        <div class="skill-selector-bar" id="skill-selector-bar" data-testid="skill-selector-bar"></div>
 
         <!-- Mobile Touch Controls: D-Pad + Action Cluster -->
         <div class="touch-controls-grid" data-testid="touch-controls-grid">
@@ -130,7 +185,7 @@
           </div>
 
           <div class="action-cluster" data-testid="action-cluster">
-            <button type="button" class="touch-btn action-btn btn-attack" data-testid="btn-action-attack">⚔️ Attack</button>
+            <button type="button" id="combat-attack-btn" class="touch-btn action-btn btn-attack" data-testid="btn-action-attack">⚔️ Attack</button>
             <button type="button" class="touch-btn action-btn btn-skill" data-testid="btn-action-skill">✨ Skill</button>
             <button type="button" class="touch-btn action-btn btn-potion" data-testid="btn-action-potion">🧪 Potion</button>
             <button type="button" class="touch-btn action-btn btn-flee" data-testid="btn-action-flee">🏃 Flee</button>
@@ -328,7 +383,7 @@
 
     <!-- Onboarding Hardcore Character Creation Modal -->
     <div class="modal-backdrop" id="character-creation-modal" data-testid="character-creation-modal">
-      <div class="modal-card creation-modal-card">
+      <div class="modal-card creation-modal-card" id="onboarding-modal">
         <div class="creation-badge">☠️ ONE LIFE — IRREVERSIBLE PERMADEATH</div>
         <h2 class="modal-title">Forge Your Hardcore Hero</h2>
         <p class="muted-text">
@@ -354,9 +409,12 @@
             data-testid="select-class-warrior"
             data-class="warrior"
           >
-            <div class="class-title">🛡️ Ironclad Warrior</div>
-            <div class="class-stats">HP 140 | ATK 16 | DEF 12</div>
-            <div class="class-trait">-10% Damage Taken • Cleave &amp; Bulwark</div>
+            <img class="class-portrait" src="/assets/hero_warrior.jpg" alt="Ironclad Warrior" />
+            <div class="class-card-body">
+              <div class="class-title">🛡️ Ironclad Warrior</div>
+              <div class="class-stats">HP 150 | ATK 18 | DEF 14</div>
+              <div class="class-trait">-10% Damage Taken • Shield Bash, Bulwark &amp; Cleave</div>
+            </div>
           </button>
 
           <button
@@ -365,9 +423,12 @@
             data-testid="select-class-ranger"
             data-class="ranger"
           >
-            <div class="class-title">🏹 Shadow Ranger</div>
-            <div class="class-stats">HP 110 | ATK 19 | SPD 16</div>
-            <div class="class-trait">First-Strike &amp; +15% Flee • Evasive Roll</div>
+            <img class="class-portrait" src="/assets/hero_ranger.jpg" alt="Shadow Ranger" />
+            <div class="class-card-body">
+              <div class="class-title">🏹 Shadow Ranger</div>
+              <div class="class-stats">HP 115 | ATK 21 | SPD 18</div>
+              <div class="class-trait">Round 1 First-Strike &amp; +10% Flee • Piercing Shot &amp; Smoke</div>
+            </div>
           </button>
 
           <button
@@ -376,15 +437,18 @@
             data-testid="select-class-mage"
             data-class="mage"
           >
-            <div class="class-title">🔥 Voidweaver Mage</div>
-            <div class="class-stats">HP 95 | MP 100 | ATK 22</div>
-            <div class="class-trait">+8% MP on Kill • Arcane Barrier &amp; Nova</div>
+            <img class="class-portrait" src="/assets/hero_mage.jpg" alt="Ember Arcanist" />
+            <div class="class-card-body">
+              <div class="class-title">🔥 Ember Arcanist</div>
+              <div class="class-stats">HP 95 | MP 105 | ATK 25</div>
+              <div class="class-trait">+8% MP on Kill • Fireball, Frost Nova &amp; Arcane Ward</div>
+            </div>
           </button>
         </div>
 
         <div class="creation-error" data-testid="creation-error" hidden></div>
 
-        <button type="button" class="btn-ember-cta" data-testid="btn-create-character">
+        <button type="button" id="create-hero-btn" class="btn-ember-cta" data-testid="btn-create-character">
           ⚔️ Enter the Realm (Hardcore)
         </button>
       </div>
@@ -392,7 +456,7 @@
 
     <!-- Permadeath Death Screen Overlay -->
     <div class="modal-backdrop death-overlay" id="death-screen-overlay" data-testid="death-screen-overlay" hidden>
-      <div class="modal-card death-modal-card">
+      <div class="modal-card death-modal-card" id="death-overlay">
         <div class="death-skull-banner">☠️ YOU HAVE FALLEN — PERMADEATH</div>
         <h2 class="modal-title" data-testid="death-hero-title">Hero Has Perished</h2>
         <p class="death-summary" data-testid="death-summary">
@@ -410,7 +474,7 @@
               maxlength="80"
               placeholder="Stood fearless against the darkness."
             />
-            <button type="button" class="btn-secondary" data-testid="btn-save-epitaph">Save Epitaph</button>
+            <button type="button" id="save-epitaph-btn" class="btn-secondary" data-testid="btn-save-epitaph">Save Epitaph</button>
           </div>
           <div class="epitaph-saved-msg" data-testid="epitaph-saved-msg" hidden>✓ Epitaph etched in stone.</div>
         </div>
@@ -419,7 +483,7 @@
           <button type="button" class="btn-secondary" data-testid="btn-death-view-graveyard">
             🪦 View Hall of the Fallen
           </button>
-          <button type="button" class="btn-ember-cta" data-testid="btn-reincarnate">
+          <button type="button" id="reincarnate-btn" class="btn-ember-cta" data-testid="btn-reincarnate">
             🔥 Reincarnate (Next Generation)
           </button>
         </div>

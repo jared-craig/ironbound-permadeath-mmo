@@ -893,3 +893,234 @@ body {
   font-size: 11px;
   color: var(--text-ash);
 }
+
+
+/* Illustrated Game Art & Combat Theatre Styles */
+.hud-hero-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--ember-gold);
+  flex-shrink: 0;
+}
+
+.sfx-toggle-btn {
+  background-color: var(--bg-slate);
+  border: 1px solid var(--border-steel);
+  color: var(--text-parchment);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.zone-showcase-banner {
+  position: relative;
+  width: 100%;
+  height: 108px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border-steel);
+  background-color: #0b0d12;
+}
+
+.zone-banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+  filter: brightness(0.75) contrast(1.08);
+  transition: transform 0.5s ease;
+}
+
+.zone-Banner-overlay,
+.zone-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(13, 14, 17, 0.25) 0%, rgba(13, 14, 17, 0.88) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 8px 10px;
+  gap: 4px;
+}
+
+.zone-banner-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.zone-banner-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ember-gold);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+.zone-banner-desc {
+  font-size: 11px;
+  color: var(--text-parchment);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.combat-duel-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(13, 14, 17, 0.82);
+  border: 1px solid rgba(214, 56, 56, 0.65);
+  border-radius: 5px;
+  padding: 4px 8px;
+}
+
+.duel-fighter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.duel-enemy {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.duel-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--ember-gold);
+  flex-shrink: 0;
+}
+
+.duel-avatar.boss-glow {
+  border-color: var(--blood-crimson);
+  box-shadow: 0 0 8px rgba(214, 56, 56, 0.6);
+}
+
+.duel-meta {
+  display: flex;
+  flex-direction: column;
+  font-size: 10px;
+  min-width: 0;
+}
+
+.duel-meta strong {
+  color: var(--text-parchment);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+
+.duel-vs {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--blood-crimson);
+  flex-shrink: 0;
+}
+
+.duel-hp-track {
+  width: 72px;
+  height: 5px;
+  background: #090a0d;
+  border: 1px solid var(--border-steel);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 1px 0;
+}
+
+.duel-hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #991b1b, #ef4444);
+  transition: width 0.2s ease;
+}
+
+.skill-selector-bar {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.skill-chip {
+  flex: 1;
+  min-width: 90px;
+  min-height: 34px;
+  background-color: var(--bg-iron);
+  border: 1px solid var(--border-steel);
+  border-radius: 5px;
+  color: var(--text-parchment);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.skill-chip.active {
+  border-color: var(--arcane-azure);
+  background-color: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+}
+
+.skill-chip.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.monster-row-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.entity-thumb {
+  width: 34px;
+  height: 34px;
+  border-radius: 5px;
+  object-fit: cover;
+  border: 1px solid var(--border-steel);
+  flex-shrink: 0;
+}
+
+.entity-thumb.boss-thumb {
+  border-color: var(--blood-crimson);
+}
+
+.class-card {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 10px !important;
+}
+
+.class-portrait {
+  width: 54px;
+  height: 54px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1.5px solid var(--ember-gold);
+  flex-shrink: 0;
+}
+
+.class-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
