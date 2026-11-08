@@ -1,0 +1,12 @@
+{
+  "name": "ironbound-permadeath-mmo",
+  "version": "1.0.0",
+  "description": "Ironbound: Permadeath Chronicles — Hardcore Mobile-First Quest MMO with Irreversible Permadeath, Fallen Heroes Graveyard, Deterministic Combat & Real-Time WebSocket Multiplayer",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node --no-warnings src/index.js",
+    "test": "node --no-warnings --test tests/unit/*.test.js tests/api/*.test.js",
+    "test:e2e": "node --no-warnings tests/e2e/run_e2e.js"
+  }
+}

@@ -1,0 +1,9 @@
+# Ignore home directory dotfiles and runtime data
+.*
+!.gitignore
+node_modules/
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.log

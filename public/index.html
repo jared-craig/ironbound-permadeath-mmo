@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Ironbound: Permadeath Chronicles</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div id="app-shell" class="app-shell" data-testid="app-shell">
+    <!-- Top Hardcore HUD -->
+    <header class="top-hud" data-testid="top-hud">
+      <div class="hud-brand-row">
+        <div class="brand-group">
+          <span class="permadeath-badge" data-testid="permadeath-badge">☠️ HARDCORE</span>
+          <h1 class="app-title">Ironbound: Permadeath Chronicles</h1>
+        </div>
+        <div class="hud-hero-meta">
+          <span class="hud-hero-name" data-testid="hud-hero-name">Unbound Soul</span>
+          <span class="hud-hero-class" data-testid="hud-hero-class">Warrior</span>
+          <span class="hud-hero-level" data-testid="hud-hero-level">Lv. 1</span>
+          <span class="hud-generation" data-testid="hud-generation">Gen I</span>
+        </div>
+      </div>
+
+      <div class="hud-bars-row">
+        <div class="stat-bar-wrap">
+          <div class="stat-bar-label">
+            <span>HP</span>
+            <span data-testid="hud-hp-text">140 / 140</span>
+          </div>
+          <div class="stat-bar-track">
+            <div class="stat-bar-fill hp-fill" data-testid="hud-hp-bar" style="width: 100%"></div>
+          </div>
+        </div>
+
+        <div class="stat-bar-wrap">
+          <div class="stat-bar-label">
+            <span>MP</span>
+            <span data-testid="hud-mp-text">50 / 50</span>
+          </div>
+          <div class="stat-bar-track">
+            <div class="stat-bar-fill mp-fill" data-testid="hud-mp-bar" style="width: 100%"></div>
+          </div>
+        </div>
+
+        <div class="stat-bar-wrap">
+          <div class="stat-bar-label">
+            <span>XP</span>
+            <span data-testid="hud-xp-text">0 / 100</span>
+          </div>
+          <div class="stat-bar-track">
+            <div class="stat-bar-fill xp-fill" data-testid="hud-xp-bar" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-status-row">
+        <span class="hud-pill gold-pill" data-testid="hud-gold">🪙 50g</span>
+        <span class="hud-pill streak-pill" data-testid="hud-kill-streak">🔥 Streak 0 (+0%)</span>
+        <span class="hud-pill party-pill" data-testid="hud-party-aura">🛡️ Solo (+0%)</span>
+        <span class="hud-pill zone-pill" data-testid="hud-zone-name">📍 Oakhaven Sanctuary</span>
+      </div>
+
+      <!-- World Event Ticker -->
+      <div class="world-event-ticker" data-testid="world-event-ticker">
+        ⚡ Welcome to Oakhaven Sanctuary. Permadeath is active: one life, eternal glory.
+      </div>
+
+      <!-- High-Risk Zone Danger Warning Banner -->
+      <div class="zone-danger-warning" data-testid="zone-danger-warning" hidden>
+        ⚠️ HIGH LETHALITY ZONE: Monsters here exceed your current level! Permadeath risk is extreme.
+      </div>
+
+      <!-- Combat Heavy Attack Telegraph Banner -->
+      <div class="combat-telegraph-banner" data-testid="combat-telegraph-banner" hidden>
+        🔥 TELEGRAPH WARNING: Enemy is charging a 1.8x Heavy Strike next turn! Use Shield/Stun/Dodge/Heal!
+      </div>
+
+      <!-- Persistent Quest Tracker HUD -->
+      <div class="quest-tracker-hud" data-testid="quest-tracker-hud">
+        <div class="quest-tracker-header">
+          <span class="tracker-label">📜 Active Quest Tracker</span>
+          <span class="tracker-count" data-testid="quest-tracker-count">0 Active</span>
+        </div>
+        <div class="quest-tracker-items" data-testid="quest-tracker-items">
+          Speak with Elder Thorne (!) in Oakhaven Sanctuary to begin your trials.
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Viewport Content Panels -->
+    <main class="main-content" data-testid="main-content">
+      <!-- TAB 1: WORLD & COMBAT -->
+      <section class="tab-panel active" id="panel-world" data-testid="panel-world">
+        <!-- Quick Zone Travel Bar -->
+        <div class="zone-travel-bar" data-testid="zone-travel-bar">
+          <button type="button" class="zone-chip active" data-testid="zone-btn-safe_haven" data-zone="safe_haven">
+            🏰 Town (Lv.1)
+          </button>
+          <button type="button" class="zone-chip" data-testid="zone-btn-whispering_woods" data-zone="whispering_woods">
+            🌲 Woods (Lv.1)
+          </button>
+          <button type="button" class="zone-chip" data-testid="zone-btn-cursed_ruins" data-zone="cursed_ruins">
+            🏛️ Ruins (Lv.3)
+          </button>
+          <button type="button" class="zone-chip" data-testid="zone-btn-molten_caverns" data-zone="molten_caverns">
+            🌋 Caverns (Lv.5)
+          </button>
+          <button type="button" class="zone-chip" data-testid="zone-btn-dragons_peak" data-zone="dragons_peak">
+            🐉 Peak (Lv.8)
+          </button>
+        </div>
+
+        <!-- 2D Tactical World Canvas -->
+        <div class="canvas-container">
+          <canvas id="world-canvas" data-testid="world-canvas" width="360" height="220"></canvas>
+        </div>
+
+        <!-- Mobile Touch Controls: D-Pad + Action Cluster -->
+        <div class="touch-controls-grid" data-testid="touch-controls-grid">
+          <div class="dpad-cluster" data-testid="dpad-cluster">
+            <button type="button" class="touch-btn dpad-btn dpad-up" data-testid="dpad-up" aria-label="Move Up">▲</button>
+            <div class="dpad-middle-row">
+              <button type="button" class="touch-btn dpad-btn dpad-left" data-testid="dpad-left" aria-label="Move Left">◀</button>
+              <button type="button" class="touch-btn dpad-btn dpad-down" data-testid="dpad-down" aria-label="Move Down">▼</button>
+              <button type="button" class="touch-btn dpad-btn dpad-right" data-testid="dpad-right" aria-label="Move Right">▶</button>
+            </div>
+          </div>
+
+          <div class="action-cluster" data-testid="action-cluster">
+            <button type="button" class="touch-btn action-btn btn-attack" data-testid="btn-action-attack">⚔️ Attack</button>
+            <button type="button" class="touch-btn action-btn btn-skill" data-testid="btn-action-skill">✨ Skill</button>
+            <button type="button" class="touch-btn action-btn btn-potion" data-testid="btn-action-potion">🧪 Potion</button>
+            <button type="button" class="touch-btn action-btn btn-flee" data-testid="btn-action-flee">🏃 Flee</button>
+            <button type="button" class="touch-btn action-btn btn-interact" data-testid="btn-action-interact">💬 NPC</button>
+            <button type="button" class="touch-btn action-btn btn-rest" data-testid="btn-action-rest">⛲ Rest</button>
+          </div>
+        </div>
+
+        <!-- Active Combat & Zone Encounters Feed -->
+        <div class="world-encounters-row">
+          <div class="encounter-box">
+            <h2 class="section-subtitle">👹 Zone Monsters &amp; Bosses</h2>
+            <div class="entity-list" data-testid="zone-monsters-list"></div>
+          </div>
+          <div class="encounter-box">
+            <h2 class="section-subtitle">🧙 Zone NPCs &amp; Quest Givers</h2>
+            <div class="entity-list" data-testid="zone-npcs-list"></div>
+          </div>
+        </div>
+
+        <div class="combat-log-box">
+          <h2 class="section-subtitle">⚔️ Tactical Combat &amp; Event Log</h2>
+          <div class="combat-log" data-testid="combat-log">Ready for adventure.</div>
+        </div>
+      </section>
+
+      <!-- TAB 2: QUESTS -->
+      <section class="tab-panel" id="panel-quests" data-testid="panel-quests" hidden>
+        <div class="panel-header">
+          <h2 class="panel-title">📜 Hardcore Quest Chronicles (8 Quests)</h2>
+          <div class="quest-lethality-warning" data-testid="quest-lethality-warning">
+            ☠️ LETHALITY ADVISORY: High, Extreme, and Lethal Boss quests carry severe Permadeath danger. Prepare potions and party allies before engaging!
+          </div>
+        </div>
+        <div class="quest-list" data-testid="quest-list"></div>
+      </section>
+
+      <!-- TAB 3: INVENTORY, GEAR, TALENTS & SHOP -->
+      <section class="tab-panel" id="panel-inventory" data-testid="panel-inventory" hidden>
+        <div class="panel-header">
+          <h2 class="panel-title">🎒 Equipment, Talents &amp; Merchant</h2>
+        </div>
+
+        <!-- Equipped Gear Slots -->
+        <div class="card-section" data-testid="equipment-section">
+          <h3 class="section-subtitle">🛡️ Equipped Gear</h3>
+          <div class="equipped-grid">
+            <div class="equip-slot" data-testid="equipped-weapon">Weapon: None</div>
+            <div class="equip-slot" data-testid="equipped-armor">Armor: None</div>
+            <div class="equip-slot" data-testid="equipped-accessory">Accessory: None</div>
+          </div>
+        </div>
+
+        <!-- Talent Tree Allocation -->
+        <div class="card-section" data-testid="talent-section">
+          <div class="talent-header">
+            <h3 class="section-subtitle">🌟 Hardcore Talent Tree</h3>
+            <span class="talent-points-badge" data-testid="talent-unspent">0 Unspent Points</span>
+          </div>
+          <div class="talent-grid">
+            <div class="talent-card" data-testid="talent-vitality">
+              <div class="talent-info">
+                <strong>❤️ Vitality</strong>
+                <span>+15 Max HP / pt</span>
+                <span class="talent-rank" data-testid="talent-rank-vitality">0 pts</span>
+              </div>
+              <button type="button" class="btn-secondary" data-testid="btn-talent-vitality">+1 Vitality</button>
+            </div>
+            <div class="talent-card" data-testid="talent-might">
+              <div class="talent-info">
+                <strong>⚔️ Might</strong>
+                <span>+3 ATK / pt</span>
+                <span class="talent-rank" data-testid="talent-rank-might">0 pts</span>
+              </div>
+              <button type="button" class="btn-secondary" data-testid="btn-talent-might">+1 Might</button>
+            </div>
+            <div class="talent-card" data-testid="talent-swiftness">
+              <div class="talent-info">
+                <strong>⚡ Swiftness</strong>
+                <span>+2 SPD &amp; +3% Flee / pt</span>
+                <span class="talent-rank" data-testid="talent-rank-swiftness">0 pts</span>
+              </div>
+              <button type="button" class="btn-secondary" data-testid="btn-talent-swiftness">+1 Swiftness</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Backpack Inventory -->
+        <div class="card-section">
+          <h3 class="section-subtitle">🎒 Hero Backpack</h3>
+          <div class="inventory-list" data-testid="inventory-list"></div>
+        </div>
+
+        <!-- Town Merchant Shop -->
+        <div class="card-section">
+          <h3 class="section-subtitle">🏪 Blacksmith Garruk's Armory &amp; Supply Shop</h3>
+          <div class="shop-list" data-testid="shop-list"></div>
+        </div>
+      </section>
+
+      <!-- TAB 4: SOCIAL, PARTY AURA & CHAT -->
+      <section class="tab-panel" id="panel-social" data-testid="panel-social" hidden>
+        <div class="panel-header">
+          <h2 class="panel-title">🛡️ Fellowship Party &amp; Realm Chat</h2>
+        </div>
+
+        <div class="card-section party-section">
+          <div class="party-row">
+            <div>
+              <h3 class="section-subtitle">🤝 Party Fellowship Aura</h3>
+              <p class="muted-text" data-testid="party-status-banner">
+                Party Mode grants +10% XP, ATK &amp; DEF per allied hero in your zone (up to +25%) and Co-op Boss Assist Strikes!
+              </p>
+            </div>
+            <button type="button" class="btn-primary" data-testid="btn-toggle-party">Toggle Party Aura</button>
+          </div>
+        </div>
+
+        <div class="card-section">
+          <h3 class="section-subtitle">🌍 Realm Chat &amp; Death Broadcasts</h3>
+          <div class="chat-messages" data-testid="chat-messages"></div>
+          <div class="chat-input-row">
+            <select class="chat-channel-select" data-testid="chat-channel" aria-label="Chat Channel">
+              <option value="global">Global</option>
+              <option value="zone">Zone</option>
+              <option value="party">Party</option>
+            </select>
+            <input
+              type="text"
+              class="chat-input"
+              data-testid="chat-input"
+              placeholder="Send message to realm..."
+              maxlength="160"
+            />
+            <button type="button" class="btn-primary" data-testid="btn-send-chat">Send</button>
+          </div>
+        </div>
+
+        <div class="card-section">
+          <h3 class="section-subtitle">🧭 Active Adventurers in Realm</h3>
+          <div class="adventurers-list" data-testid="adventurers-list"></div>
+        </div>
+      </section>
+
+      <!-- TAB 5: HALL OF THE FALLEN GRAVEYARD -->
+      <section class="tab-panel" id="panel-graveyard" data-testid="panel-graveyard" hidden>
+        <div class="panel-header">
+          <h2 class="panel-title">🪦 Hall of the Fallen — Eternal Memorial</h2>
+          <p class="muted-text">Every fallen hardcore hero is etched into stone forever.</p>
+          <div class="graveyard-sort-row">
+            <button type="button" class="btn-chip active" data-testid="sort-level" data-sort="level">🏆 Highest Level</button>
+            <button type="button" class="btn-chip" data-testid="sort-quests" data-sort="quests">📜 Most Quests</button>
+            <button type="button" class="btn-chip" data-testid="sort-recent" data-sort="recent">⏱️ Most Recent</button>
+          </div>
+        </div>
+        <div class="graveyard-list" data-testid="graveyard-list"></div>
+      </section>
+    </main>
+
+    <!-- Bottom 5-Tab Navigation Bar -->
+    <nav class="bottom-nav" data-testid="bottom-nav">
+      <button type="button" class="nav-tab active" data-testid="nav-tab-world" data-tab="world">
+        <span class="nav-icon">🗺️</span>
+        <span class="nav-label">World</span>
+      </button>
+      <button type="button" class="nav-tab" data-testid="nav-tab-quests" data-tab="quests">
+        <span class="nav-icon">📜</span>
+        <span class="nav-label">Quests</span>
+      </button>
+      <button type="button" class="nav-tab" data-testid="nav-tab-inventory" data-tab="inventory">
+        <span class="nav-icon">🎒</span>
+        <span class="nav-label">Gear</span>
+      </button>
+      <button type="button" class="nav-tab" data-testid="nav-tab-social" data-tab="social">
+        <span class="nav-icon">💬</span>
+        <span class="nav-label">Social</span>
+      </button>
+      <button type="button" class="nav-tab" data-testid="nav-tab-graveyard" data-tab="graveyard">
+        <span class="nav-icon">🪦</span>
+        <span class="nav-label">Fallen</span>
+      </button>
+    </nav>
+
+    <!-- NPC Dialogue Modal -->
+    <div class="modal-backdrop" id="npc-dialogue-modal" data-testid="npc-dialogue-modal" hidden>
+      <div class="modal-card npc-modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title" data-testid="npc-dialogue-name">Elder Thorne</h2>
+          <button type="button" class="btn-close" data-testid="btn-close-npc-modal" aria-label="Close">✕</button>
+        </div>
+        <p class="npc-greeting" data-testid="npc-dialogue-text"></p>
+        <div class="npc-quests-container" data-testid="npc-dialogue-quests"></div>
+      </div>
+    </div>
+
+    <!-- Onboarding Hardcore Character Creation Modal -->
+    <div class="modal-backdrop" id="character-creation-modal" data-testid="character-creation-modal">
+      <div class="modal-card creation-modal-card">
+        <div class="creation-badge">☠️ ONE LIFE — IRREVERSIBLE PERMADEATH</div>
+        <h2 class="modal-title">Forge Your Hardcore Hero</h2>
+        <p class="muted-text">
+          If your HP reaches 0, your hero dies permanently and is enshrined in the Hall of the Fallen.
+        </p>
+
+        <label class="field-label" for="input-hero-name">Hero Name (2–20 alphanumeric chars)</label>
+        <input
+          id="input-hero-name"
+          type="text"
+          class="text-input"
+          data-testid="input-hero-name"
+          placeholder="Enter Hero Name (e.g. Vaelen)"
+          maxlength="20"
+          autocomplete="off"
+        />
+
+        <div class="field-label">Select Hardcore Class</div>
+        <div class="class-select-grid">
+          <button
+            type="button"
+            class="class-card selected"
+            data-testid="select-class-warrior"
+            data-class="warrior"
+          >
+            <div class="class-title">🛡️ Ironclad Warrior</div>
+            <div class="class-stats">HP 140 | ATK 16 | DEF 12</div>
+            <div class="class-trait">-10% Damage Taken • Cleave &amp; Bulwark</div>
+          </button>
+
+          <button
+            type="button"
+            class="class-card"
+            data-testid="select-class-ranger"
+            data-class="ranger"
+          >
+            <div class="class-title">🏹 Shadow Ranger</div>
+            <div class="class-stats">HP 110 | ATK 19 | SPD 16</div>
+            <div class="class-trait">First-Strike &amp; +15% Flee • Evasive Roll</div>
+          </button>
+
+          <button
+            type="button"
+            class="class-card"
+            data-testid="select-class-mage"
+            data-class="mage"
+          >
+            <div class="class-title">🔥 Voidweaver Mage</div>
+            <div class="class-stats">HP 95 | MP 100 | ATK 22</div>
+            <div class="class-trait">+8% MP on Kill • Arcane Barrier &amp; Nova</div>
+          </button>
+        </div>
+
+        <div class="creation-error" data-testid="creation-error" hidden></div>
+
+        <button type="button" class="btn-ember-cta" data-testid="btn-create-character">
+          ⚔️ Enter the Realm (Hardcore)
+        </button>
+      </div>
+    </div>
+
+    <!-- Permadeath Death Screen Overlay -->
+    <div class="modal-backdrop death-overlay" id="death-screen-overlay" data-testid="death-screen-overlay" hidden>
+      <div class="modal-card death-modal-card">
+        <div class="death-skull-banner">☠️ YOU HAVE FALLEN — PERMADEATH</div>
+        <h2 class="modal-title" data-testid="death-hero-title">Hero Has Perished</h2>
+        <p class="death-summary" data-testid="death-summary">
+          Slain in battle. Your deeds are etched forever in the Hall of the Fallen.
+        </p>
+
+        <div class="epitaph-box">
+          <label class="field-label" for="input-death-epitaph">Inscribe Your Memorial Epitaph (Max 80 chars)</label>
+          <div class="epitaph-input-row">
+            <input
+              id="input-death-epitaph"
+              type="text"
+              class="text-input"
+              data-testid="input-death-epitaph"
+              maxlength="80"
+              placeholder="Stood fearless against the darkness."
+            />
+            <button type="button" class="btn-secondary" data-testid="btn-save-epitaph">Save Epitaph</button>
+          </div>
+          <div class="epitaph-saved-msg" data-testid="epitaph-saved-msg" hidden>✓ Epitaph etched in stone.</div>
+        </div>
+
+        <div class="death-actions-row">
+          <button type="button" class="btn-secondary" data-testid="btn-death-view-graveyard">
+            🪦 View Hall of the Fallen
+          </button>
+          <button type="button" class="btn-ember-cta" data-testid="btn-reincarnate">
+            🔥 Reincarnate (Next Generation)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
